@@ -69,26 +69,3 @@ class Database
         }
     }
 
-    public function getExpedienteById($id)
-    {
-        try {
-            $query = "SELECT * FROM expedientes WHERE id = :id";
-            $stmt = $this->pdo->prepare($query);
-            $stmt->execute([':id' => $id]);
-            return $stmt->fetch();
-        } catch (PDOException $e) {
-            throw new Exception('Error al obtener expediente: ' . $e->getMessage());
-        }
-    }
-
-    public function deleteExpediente($id)
-    {
-        try {
-            $query = "DELETE FROM expedientes WHERE id = :id";
-            $stmt = $this->pdo->prepare($query);
-            return $stmt->execute([':id' => $id]);
-        } catch (PDOException $e) {
-            throw new Exception('Error al eliminar: ' . $e->getMessage());
-        }
-    }
-}
