@@ -54,6 +54,14 @@ $expedientes = $db->getAllExpedientes();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulario Puntuación operarios</title>
     <link rel="stylesheet" href="styles.css">
+    <script>
+        // Verificar si es la primera vez que entra (animaciones)
+        if (sessionStorage.getItem('firstVisit')) {
+            document.documentElement.classList.add('no-animations');
+        } else {
+            sessionStorage.setItem('firstVisit', 'true');
+        }
+    </script>
 </head>
 <body>
     <div class="container">
