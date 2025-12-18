@@ -68,4 +68,4 @@ class Database
             throw new Exception('Error al obtener expedientes: ' . $e->getMessage());
         }
     }
-
+}
