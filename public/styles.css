@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: white;
     min-height: 100vh;
     padding: 20px;
 }
@@ -20,14 +20,39 @@ body {
     background: white;
     padding: 30px;
     border-radius: 10px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    border: 1px solid #333;
+    box-shadow: 0 10px 10px rgba(0, 0, 0, 0.2);
     margin-bottom: 30px;
+    overflow-x: auto;
 }
 
 h1 {
     color: #333;
     margin-bottom: 10px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #333;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    display: inline-block;
+    color: #53b5e2;
+    flex-shrink: 0;
 }
 
 .subtitle {
@@ -60,7 +85,7 @@ input[type="number"] {
 input[type="text"]:focus,
 input[type="number"]:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #53b5e2;
 }
 
 .form-row {
@@ -70,7 +95,7 @@ input[type="number"]:focus {
 }
 
 button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #53b5e2;
     color: white;
     padding: 12px 30px;
     border: none;
@@ -84,7 +109,7 @@ button {
 
 button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 5px 15px rgba(102, 208, 234, 0.4);
 }
 
 .message {
@@ -112,18 +137,25 @@ button:hover {
     text-align: center;
 }
 
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    min-width: 600px;
 }
 
 th {
-    background: #667eea;
+    background: #53b5e2;
     color: white;
     padding: 15px;
     text-align: left;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 td {
@@ -142,9 +174,86 @@ tr:hover {
     font-style: italic;
 }
 
+@media (max-width: 768px) {
+    .form-section {
+        padding: 20px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    h2 {
+        font-size: 18px;
+    }
+
+    .icon {
+        width: 24px;
+        height: 24px;
+    }
+
+    table {
+        font-size: 14px;
+    }
+
+    th,
+    td {
+        padding: 10px;
+    }
+
+    .table-section {
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+
+    .form-section {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    h1 {
+        font-size: 18px;
+    }
+
+    h2 {
+        font-size: 16px;
+    }
+
+    .icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    button {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    table {
+        font-size: 12px;
+    }
+
+    th,
+    td {
+        padding: 8px;
+    }
+}
+
 .puntuacion {
     font-weight: 600;
-    color: #667eea;
+    color: #2ca8e2;
 }
 
 @media (max-width: 768px) {

@@ -52,14 +52,21 @@ $expedientes = $db->getAllExpedientes();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulario de Puntuación</title>
+    <title>Formulario Puntuación operarios</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <div class="form-section">
-            <h1>📋 Formulario de Puntuación</h1>
-            <p class="subtitle">Registro de expedientes y calificaciones</p>
+            <h1>
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Formulario de Puntuación
+            </h1>
+            <p class="subtitle">Registro de expedientes y operarios</p>
 
             <?php if ($message): ?>
                 <div class="message <?php echo $message_type; ?>">
@@ -90,31 +97,42 @@ $expedientes = $db->getAllExpedientes();
         </div>
 
         <div class="form-section table-section">
-            <h2>📊 Expedientes Registrados</h2>
+            <h2>
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                    <line x1="15" y1="3" x2="15" y2="21"></line>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="3" y1="15" x2="21" y2="15"></line>
+                </svg>
+                Expedientes Registrados
+            </h2>
 
             <?php if (!empty($expedientes)): ?>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>ID Expediente</th>
-                            <th>Nombre Completo</th>
-                            <th>Puntuación</th>
-                            <th>Fecha</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($expedientes as $index => $exp): ?>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
                             <tr>
-                                <td><?php echo $index + 1; ?></td>
-                                <td><?php echo htmlspecialchars($exp['id_expediente']); ?></td>
-                                <td><?php echo htmlspecialchars($exp['nombre_completo']); ?></td>
-                                <td class="puntuacion"><?php echo number_format($exp['puntuacion'], 2); ?></td>
-                                <td><?php echo date('d/m/Y H:i', strtotime($exp['fecha_creacion'])); ?></td>
+                                <th>#</th>
+                                <th>ID Expediente</th>
+                                <th>Nombre Completo</th>
+                                <th>Puntuación</th>
+                                <th>Fecha</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($expedientes as $index => $exp): ?>
+                                <tr>
+                                    <td><?php echo $index + 1; ?></td>
+                                    <td><?php echo htmlspecialchars($exp['id_expediente']); ?></td>
+                                    <td><?php echo htmlspecialchars($exp['nombre_completo']); ?></td>
+                                    <td class="puntuacion"><?php echo number_format($exp['puntuacion'], 2); ?></td>
+                                    <td><?php echo date('d/m/Y H:i', strtotime($exp['fecha_creacion'])); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             <?php else: ?>
                 <p class="no-data">No hay expedientes registrados aún</p>
             <?php endif; ?>
