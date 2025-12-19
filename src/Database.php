@@ -33,53 +33,46 @@ class Database
         }
     }
 
+    /**
+     * Obtener todos los items del checklist
+     */
+    public function getChecklistItems()
+    {
+        try {
+            $query = "SELECT id, codigo, texto, puntos_si, orden 
+                      FROM checklist_items 
+                      ORDER BY orden ASC";
+            
+            $stmt = $this->pdo->query($query);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            throw new Exception('Error al obtener checklist: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Insertar un nuevo expediente
+     */
     public function insertExpediente($data)
     {
         try {
-            $query = "INSERT INTO expedientes (
-                        id_expediente, nombre_completo, puntuacion,
-                        llego_tiempo, informo_aseguradora, fotos_antes,
-                        localizo_averia, llamo_encargado, foto_durante,
-                        reparo_1_visita, llamo_encargado_en_visita, justificado, foto_despues, need_seg_gremio,
-                        gremio_correcto, tomo_datos_perj, tomo_medidas_est_pav,
-                        nps, firma_asegurado, cerro_exp
-                      ) VALUES (
-                        :id_expediente, :nombre_completo, :puntuacion,
-                        :llego_tiempo, :informo_aseguradora, :fotos_antes,
-                        :localizo_averia, :llamo_encargado, :foto_durante,
-                        :reparo_1_visita, :llamo_encargado_en_visita, :justificado, :foto_despues, :need_seg_gremio,
-                        :gremio_correcto, :tomo_datos_perj, :tomo_medidas_est_pav,
-                        :nps, :firma_asegurado, :cerro_exp
-                      )";
+            // Primero insertar el expediente
+            $query = "INSERT INTO expedientes (id_expediente, nombre_completo, puntuacion, fecha_expediente) 
+                      VALUES (:id_expediente, :nombre_completo, :puntuacion, :fecha_expediente)
+                      RETURNING id";
             
             $stmt = $this->pdo->prepare($query);
-            
-            // Bind de manera explícita con tipos
             $stmt->bindValue(':id_expediente', $data['id_expediente'], PDO::PARAM_STR);
             $stmt->bindValue(':nombre_completo', $data['nombre_completo'], PDO::PARAM_STR);
             $stmt->bindValue(':puntuacion', $data['puntuacion'], PDO::PARAM_STR);
-            
-            // Para booleanos, convertir null a NULL de SQL
-            $stmt->bindValue(':llego_tiempo', $data['llego_tiempo'], $data['llego_tiempo'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':informo_aseguradora', $data['informo_aseguradora'], $data['informo_aseguradora'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':fotos_antes', $data['fotos_antes'], $data['fotos_antes'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':localizo_averia', $data['localizo_averia'], $data['localizo_averia'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':llamo_encargado', $data['llamo_encargado'], $data['llamo_encargado'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':foto_durante', $data['foto_durante'], $data['foto_durante'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':reparo_1_visita', $data['reparo_1_visita'], $data['reparo_1_visita'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':llamo_encargado_en_visita', $data['llamo_encargado_en_visita'], $data['llamo_encargado_en_visita'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':justificado', $data['justificado'], $data['justificado'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':foto_despues', $data['foto_despues'], $data['foto_despues'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':need_seg_gremio', $data['need_seg_gremio'], $data['need_seg_gremio'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':gremio_correcto', $data['gremio_correcto'], $data['gremio_correcto'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':tomo_datos_perj', $data['tomo_datos_perj'], $data['tomo_datos_perj'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':tomo_medidas_est_pav', $data['tomo_medidas_est_pav'], $data['tomo_medidas_est_pav'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':firma_asegurado', $data['firma_asegurado'], $data['firma_asegurado'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            $stmt->bindValue(':cerro_exp', $data['cerro_exp'], $data['cerro_exp'] !== null ? PDO::PARAM_BOOL : PDO::PARAM_NULL);
-            
-            $stmt->bindValue(':nps', $data['nps'] ?? null, PDO::PARAM_STR);
+            $stmt->bindValue(':fecha_expediente', $data['fecha_expediente'] ?? null, PDO::PARAM_STR);
             
             $stmt->execute();
+            $result = $stmt->fetch();
+            $expediente_id = $result['id'];
+
+            // Luego insertar las respuestas del checklist
+            $this->insertChecklistRespuestas($expediente_id, $data['respuestas'] ?? []);
 
             return true;
         } catch (PDOException $e) {
@@ -90,18 +83,54 @@ class Database
         }
     }
 
-    public function getExpedientes()
+    /**
+     * Insertar respuestas del checklist
+     */
+    private function insertChecklistRespuestas($expediente_id, $respuestas)
     {
         try {
-            $query = "SELECT * FROM expedientes ORDER BY fecha_creacion DESC";
+            $query = "INSERT INTO checklist_respuestas (expediente_id, item_id, marcado) 
+                      VALUES (:expediente_id, :item_id, :marcado)
+                      ON CONFLICT (expediente_id, item_id) DO UPDATE 
+                      SET marcado = EXCLUDED.marcado, updated_at = NOW()";
             
-            $stmt = $this->pdo->query($query);
-            return $stmt->fetchAll();
+            $stmt = $this->pdo->prepare($query);
+
+            foreach ($respuestas as $item_id => $marcado) {
+                $stmt->bindValue(':expediente_id', $expediente_id, PDO::PARAM_INT);
+                $stmt->bindValue(':item_id', $item_id, PDO::PARAM_INT);
+                $stmt->bindValue(':marcado', $marcado === true || $marcado === '1', PDO::PARAM_BOOL);
+                $stmt->execute();
+            }
         } catch (PDOException $e) {
-            throw new Exception('Error al obtener expedientes: ' . $e->getMessage());
+            throw new Exception('Error al guardar respuestas: ' . $e->getMessage());
         }
     }
 
+    /**
+     * Obtener expediente con sus respuestas
+     */
+    public function getExpedienteWithRespuestas($expediente_id)
+    {
+        try {
+            $query = "SELECT e.*, cr.item_id, cr.marcado 
+                      FROM expedientes e
+                      LEFT JOIN checklist_respuestas cr ON e.id = cr.expediente_id
+                      WHERE e.id = :id";
+            
+            $stmt = $this->pdo->prepare($query);
+            $stmt->bindValue(':id', $expediente_id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            throw new Exception('Error al obtener expediente: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Obtener todos los expedientes
+     */
     public function getAllExpedientes()
     {
         try {
@@ -115,4 +144,68 @@ class Database
             throw new Exception('Error al obtener expedientes: ' . $e->getMessage());
         }
     }
-}
+
+    /**
+     * Calcular puntuación automáticamente
+     */
+    public function calcularPuntuacion($expediente_id)
+    {
+        try {
+            $query = "SELECT COALESCE(SUM(ci.puntos_si), 0) as total_puntos 
+                      FROM checklist_respuestas cr
+                      INNER JOIN checklist_items ci ON cr.item_id = ci.id
+                      WHERE cr.expediente_id = :expediente_id AND cr.marcado = true";
+            
+            $stmt = $this->pdo->prepare($query);
+            $stmt->bindValue(':expediente_id', $expediente_id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $result = $stmt->fetch();
+            return $result['total_puntos'] ?? 0;
+        } catch (PDOException $e) {
+            throw new Exception('Error al calcular puntuación: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Obtener nombres únicos de expedientes
+     */
+    public function getNombresUnicos()
+    {
+        try {
+            $query = "SELECT DISTINCT nombre_completo 
+                      FROM expedientes 
+                      ORDER BY nombre_completo ASC";
+            
+            $stmt = $this->pdo->query($query);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            throw new Exception('Error al obtener nombres: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Obtener expedientes filtrados por nombre y rango de fechas
+     */
+    public function getExpedientesFiltrados($nombre_completo, $fecha_inicio, $fecha_fin)
+    {
+        try {
+            $query = "SELECT id, id_expediente, nombre_completo, puntuacion, fecha_expediente, fecha_creacion 
+                      FROM expedientes 
+                      WHERE nombre_completo = :nombre_completo 
+                      AND fecha_expediente >= :fecha_inicio 
+                      AND fecha_expediente <= :fecha_fin
+                      ORDER BY fecha_expediente DESC";
+            
+            $stmt = $this->pdo->prepare($query);
+            $stmt->bindValue(':nombre_completo', $nombre_completo, PDO::PARAM_STR);
+            $stmt->bindValue(':fecha_inicio', $fecha_inicio, PDO::PARAM_STR);
+            $stmt->bindValue(':fecha_fin', $fecha_fin, PDO::PARAM_STR);
+            $stmt->execute();
+            
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            throw new Exception('Error al filtrar expedientes: ' . $e->getMessage());
+        }
+    }
+}   
