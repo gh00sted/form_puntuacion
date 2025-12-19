@@ -8,6 +8,8 @@ $checklist_items = [];
 $nombres_unicos = [];
 $expedientes_filtrados = [];
 $mostrar_filtrados = false;
+$puntuacion_total = 0;
+$nombre_filtro = '';
 
 // Obtener items del checklist
 try {
@@ -28,6 +30,7 @@ if (isset($_GET['success']) && $_GET['success'] === '1') {
     $response_message = '<div style="color: green; padding: 10px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; margin-bottom: 20px;">✓ Expediente guardado correctamente</div>';
 }
 
+
 // Procesar búsqueda filtrada
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'buscar') {
     $nombre_filtro = trim($_POST['nombre_filtro'] ?? '');
@@ -38,6 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         try {
             $expedientes_filtrados = $db->getExpedientesFiltrados($nombre_filtro, $fecha_inicio, $fecha_fin);
             $mostrar_filtrados = true;
+            
+            // Calcular puntuación total
+            $puntuacion_total = 0;
+            foreach ($expedientes_filtrados as $exp) {
+                $puntuacion_total += $exp['puntuacion'];
+            }
         } catch (Exception $e) {
             $response_message = '<div style="color: red; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; margin-bottom: 20px;">✗ Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
         }
@@ -405,7 +414,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
     <!-- Resultados Filtrados -->
     <?php if ($mostrar_filtrados): ?>
     <div class="container">
-        <h2>Resultados de Búsqueda</h2>
+        <h2>Resultados de Búsqueda - <?php echo htmlspecialchars($nombre_filtro); ?> (Puntuación Total: <?php echo number_format($puntuacion_total, 2); ?>)</h2>
         <?php if (empty($expedientes_filtrados)): ?>
             <p style="padding: 20px; background-color: #f5f5f5; border-radius: 4px; text-align: center;">No se encontraron expedientes con los criterios especificados.</p>
         <?php else: ?>
