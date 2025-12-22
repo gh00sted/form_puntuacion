@@ -157,17 +157,22 @@ button[type="submit"] {
     font-size: 1em;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
     width: 100%;
     margin-top: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 button[type="submit"]:hover {
-    background-color: #555;
+    background-color: #27ae60;
+    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+    transform: translateY(-2px);
 }
 
 button[type="submit"]:active {
-    background-color: #222;
+    background-color: #229954;
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(39, 174, 96, 0.2);
 }
 
 /* Botón de búsqueda */
@@ -176,11 +181,15 @@ button[type="submit"]:active {
 }
 
 .search-button:hover {
-    background-color: #0056b3;
+    background-color: #27ae60;
+    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+    transform: translateY(-2px);
 }
 
 .search-button:active {
-    background-color: #003d82;
+    background-color: #229954;
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(39, 174, 96, 0.2);
 }
 
 /* Clase hidden */

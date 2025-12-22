@@ -14,6 +14,14 @@ SET row_security = off;
 SET default_tablespace = '';
 SET default_table_access_method = heap;
 
+-- Crear tabla operarios
+CREATE TABLE IF NOT EXISTS public.operarios (
+    id SERIAL PRIMARY KEY,
+    nombre_completo VARCHAR(255) NOT NULL,
+    activo BOOLEAN DEFAULT true NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Crear tabla checklist_items
 CREATE TABLE IF NOT EXISTS public.checklist_items (
     id SERIAL PRIMARY KEY,
@@ -27,7 +35,7 @@ CREATE TABLE IF NOT EXISTS public.checklist_items (
 CREATE TABLE IF NOT EXISTS public.expedientes (
     id SERIAL PRIMARY KEY,
     id_expediente VARCHAR(50) NOT NULL UNIQUE,
-    nombre_completo VARCHAR(255) NOT NULL,
+    operario_id INTEGER NOT NULL REFERENCES public.operarios(id) ON DELETE RESTRICT,
     puntuacion NUMERIC(5,2) NOT NULL,
     fecha_expediente DATE,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -55,12 +63,13 @@ INSERT INTO public.checklist_items (codigo, texto, puntos_si, orden) VALUES
 ('LOCALIZO_AVERIA',      'Localizó avería',                             1.00,  4),
 ('FOTO_DURANTE',         'Foto durante',                                0.50,  5),
 ('REPARO_PRIMERA',       'Reparó en 1ª visita',                         1.00,  6),
-('LLAMO_ENCARGADO',      'Llamó a encargado',                           0.50,  7),
+('LLAMO_ENCARGADO',      'Llamó a encargado (No localizó avería)',       0.50,  7),
 ('JUSTIFICADO',          'Justificado',                                 0.50,  8),
 ('FOTO_DESPUES',         'Foto después',                                0.50,  9),
 ('SEGUNDO_GREMIO',       'Segundo gremio',                              0.33, 10),
 ('TOMO_DATOS',           'Tomó datos del perjudicado',                  0.33, 11),
 ('TOMO_MEDIDAS',         'Tomó medidas, estancias y pavimento',         0.33, 12),
 ('FIRMA_ASEGURADO',      'Firma asegurado',                             0.25, 13),
-('EXPEDIENTE_CERRADO',   'Se ha cerrado expediente',                    0.25, 14)
+('EXPEDIENTE_CERRADO',   'Se ha cerrado expediente',                    0.25, 14),
+('LLAMO_ENCARGADO_2',    'Llamó a encargado (No reparó en 1ª)',          0.50, 15)
 ON CONFLICT (codigo) DO NOTHING;

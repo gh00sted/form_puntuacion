@@ -57,13 +57,13 @@ class Database
     {
         try {
             // Primero insertar el expediente
-            $query = "INSERT INTO expedientes (id_expediente, nombre_completo, puntuacion, fecha_expediente) 
-                      VALUES (:id_expediente, :nombre_completo, :puntuacion, :fecha_expediente)
+            $query = "INSERT INTO expedientes (id_expediente, operario_id, puntuacion, fecha_expediente) 
+                      VALUES (:id_expediente, :operario_id, :puntuacion, :fecha_expediente)
                       RETURNING id";
             
             $stmt = $this->pdo->prepare($query);
             $stmt->bindValue(':id_expediente', $data['id_expediente'], PDO::PARAM_STR);
-            $stmt->bindValue(':nombre_completo', $data['nombre_completo'], PDO::PARAM_STR);
+            $stmt->bindValue(':operario_id', $data['operario_id'], PDO::PARAM_INT);
             $stmt->bindValue(':puntuacion', $data['puntuacion'], PDO::PARAM_STR);
             $stmt->bindValue(':fecha_expediente', $data['fecha_expediente'] ?? null, PDO::PARAM_STR);
             
@@ -134,9 +134,10 @@ class Database
     public function getAllExpedientes()
     {
         try {
-            $query = "SELECT id, id_expediente, nombre_completo, puntuacion, fecha_creacion 
-                      FROM expedientes 
-                      ORDER BY fecha_creacion DESC";
+            $query = "SELECT e.id, e.id_expediente, o.nombre_completo, e.puntuacion, e.fecha_creacion 
+                      FROM expedientes e
+                      JOIN operarios o ON e.operario_id = o.id
+                      ORDER BY e.fecha_creacion DESC";
             
             $stmt = $this->pdo->query($query);
             return $stmt->fetchAll();
@@ -168,37 +169,77 @@ class Database
     }
 
     /**
-     * Obtener nombres únicos de expedientes
+     * Obtener nombres únicos de operarios
      */
-    public function getNombresUnicos()
+    public function getOperarios()
     {
         try {
-            $query = "SELECT DISTINCT nombre_completo 
-                      FROM expedientes 
+            $query = "SELECT id, nombre_completo 
+                      FROM operarios 
+                      WHERE activo = true
                       ORDER BY nombre_completo ASC";
             
             $stmt = $this->pdo->query($query);
             return $stmt->fetchAll();
         } catch (PDOException $e) {
-            throw new Exception('Error al obtener nombres: ' . $e->getMessage());
+            throw new Exception('Error al obtener operarios: ' . $e->getMessage());
         }
     }
 
     /**
-     * Obtener expedientes filtrados por nombre y rango de fechas
+     * Obtener nombres únicos de operarios (para compatibilidad con código anterior)
      */
-    public function getExpedientesFiltrados($nombre_completo, $fecha_inicio, $fecha_fin)
+    public function getNombresUnicos()
+    {
+        return $this->getOperarios();
+    }
+
+    /**
+     * Obtener o crear un operario por nombre
+     */
+    public function getOrCreateOperario($nombre_completo)
     {
         try {
-            $query = "SELECT id, id_expediente, nombre_completo, puntuacion, fecha_expediente, fecha_creacion 
-                      FROM expedientes 
-                      WHERE nombre_completo = :nombre_completo 
-                      AND fecha_expediente >= :fecha_inicio 
-                      AND fecha_expediente <= :fecha_fin
-                      ORDER BY fecha_expediente DESC";
-            
+            // Buscar si el operario existe
+            $query = "SELECT id FROM operarios WHERE nombre_completo = :nombre_completo LIMIT 1";
             $stmt = $this->pdo->prepare($query);
             $stmt->bindValue(':nombre_completo', $nombre_completo, PDO::PARAM_STR);
+            $stmt->execute();
+            $result = $stmt->fetch();
+            
+            if ($result) {
+                return $result['id'];
+            }
+            
+            // Si no existe, crear uno nuevo
+            $query = "INSERT INTO operarios (nombre_completo, activo) VALUES (:nombre_completo, true) RETURNING id";
+            $stmt = $this->pdo->prepare($query);
+            $stmt->bindValue(':nombre_completo', $nombre_completo, PDO::PARAM_STR);
+            $stmt->execute();
+            $result = $stmt->fetch();
+            
+            return $result['id'];
+        } catch (PDOException $e) {
+            throw new Exception('Error al obtener o crear operario: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Obtener expedientes filtrados por operario y rango de fechas
+     */
+    public function getExpedientesFiltrados($operario_id, $fecha_inicio, $fecha_fin)
+    {
+        try {
+            $query = "SELECT e.id, e.id_expediente, o.nombre_completo, e.puntuacion, e.fecha_expediente, e.fecha_creacion 
+                      FROM expedientes e
+                      JOIN operarios o ON e.operario_id = o.id
+                      WHERE e.operario_id = :operario_id 
+                      AND e.fecha_expediente >= :fecha_inicio 
+                      AND e.fecha_expediente <= :fecha_fin
+                      ORDER BY e.fecha_expediente DESC";
+            
+            $stmt = $this->pdo->prepare($query);
+            $stmt->bindValue(':operario_id', $operario_id, PDO::PARAM_INT);
             $stmt->bindValue(':fecha_inicio', $fecha_inicio, PDO::PARAM_STR);
             $stmt->bindValue(':fecha_fin', $fecha_fin, PDO::PARAM_STR);
             $stmt->execute();

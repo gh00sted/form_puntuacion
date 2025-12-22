@@ -5,11 +5,11 @@ require_once __DIR__ . '/../src/Database.php';
 $db = new Database();
 $response_message = '';
 $checklist_items = [];
-$nombres_unicos = [];
+$operarios = [];
 $expedientes_filtrados = [];
 $mostrar_filtrados = false;
 $puntuacion_total = 0;
-$nombre_filtro = '';
+$operario_filtro = '';
 
 // Obtener items del checklist
 try {
@@ -18,11 +18,11 @@ try {
     $response_message = '<div style="color: orange; padding: 10px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 20px;">⚠ Aviso: ' . htmlspecialchars($e->getMessage()) . '</div>';
 }
 
-// Obtener nombres únicos
+// Obtener operarios
 try {
-    $nombres_unicos = $db->getNombresUnicos();
+    $operarios = $db->getOperarios();
 } catch (Exception $e) {
-    // Silenciar errores al obtener nombres
+    // Silenciar errores al obtener operarios
 }
 
 // Mostrar mensaje de éxito si viene del redirect
@@ -33,14 +33,22 @@ if (isset($_GET['success']) && $_GET['success'] === '1') {
 
 // Procesar búsqueda filtrada
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'buscar') {
-    $nombre_filtro = trim($_POST['nombre_filtro'] ?? '');
+    $operario_id = trim($_POST['operario_filtro'] ?? '');
     $fecha_inicio = trim($_POST['fecha_inicio'] ?? '');
     $fecha_fin = trim($_POST['fecha_fin'] ?? '');
 
-    if (!empty($nombre_filtro) && !empty($fecha_inicio) && !empty($fecha_fin)) {
+    if (!empty($operario_id) && !empty($fecha_inicio) && !empty($fecha_fin)) {
         try {
-            $expedientes_filtrados = $db->getExpedientesFiltrados($nombre_filtro, $fecha_inicio, $fecha_fin);
+            $expedientes_filtrados = $db->getExpedientesFiltrados($operario_id, $fecha_inicio, $fecha_fin);
             $mostrar_filtrados = true;
+            
+            // Obtener nombre del operario para mostrar en resultados
+            foreach ($operarios as $op) {
+                if ($op['id'] == $operario_id) {
+                    $operario_filtro = $op['nombre_completo'];
+                    break;
+                }
+            }
             
             // Calcular puntuación total
             $puntuacion_total = 0;
@@ -58,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Procesar formulario de crear expediente (solo si no es búsqueda)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST['action'] !== 'buscar')) {
     $id_expediente = trim($_POST['id_expediente'] ?? '');
-    $nombre_completo = trim($_POST['nombre_completo'] ?? '');
+    $operario_nombre = trim($_POST['operario_nombre'] ?? '');
     $fecha_expediente = trim($_POST['fecha_expediente'] ?? '');
     
     // Validaciones
@@ -66,12 +74,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
     if (empty($id_expediente)) {
         $errors[] = 'El ID de expediente es requerido';
     }
-    if (empty($nombre_completo)) {
-        $errors[] = 'El nombre completo es requerido';
+    if (empty($operario_nombre)) {
+        $errors[] = 'El operario es requerido';
     }
 
     if (empty($errors)) {
         try {
+            // Obtener o crear el operario
+            $operario_id = $db->getOrCreateOperario($operario_nombre);
+            
             // Mapeo de nombres de campos a IDs de items del checklist
             $field_to_item = [
                 'llego_a_tiempo' => 1,
@@ -88,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
                 'tomo_medidas' => 12,
                 'firma_asegurado' => 13,
                 'expediente_cerrado' => 14,
-                'llamo_encargado_2' => 7  // Mismo item que llamo_encargado_1
+                'llamo_encargado_2' => 15  // Item separado para el segundo "Llamó a encargado"
             ];
 
             // Preparar respuestas del checklist
@@ -102,33 +113,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
 
             // Calcular puntuación basada en respuestas
             $puntuacion = 0;
-            $llamo_encargado_counted = false;
 
             foreach ($checklist_items as $item) {
-                // Saltar el item 7 (Llamó encargado) de la iteración normal
-                // lo manejaremos especialmente
-                if ($item['id'] === 7) {
-                    continue;
-                }
-
                 if (isset($respuestas[$item['id']]) && $respuestas[$item['id']]) {
                     $puntuacion += $item['puntos_si'];
                 }
             }
 
-            // Manejar "Llamó a encargado" especialmente
-            // Sumar 1.00 si CUALQUIERA de los dos está marcado
-            $llamo_enc_1_marked = isset($respuestas[7]) && $respuestas[7];
-            $llamo_enc_2_marked = isset($_POST['llamo_encargado_2']) && $_POST['llamo_encargado_2'] === '1';
-
-            if ($llamo_enc_1_marked || $llamo_enc_2_marked) {
-                $puntuacion += 1.00;
-            }
-
             // Preparar datos para insertar
             $params = [
                 'id_expediente' => $id_expediente,
-                'nombre_completo' => $nombre_completo,
+                'operario_id' => $operario_id,
                 'puntuacion' => $puntuacion,
                 'fecha_expediente' => $fecha_expediente,
                 'respuestas' => $respuestas
@@ -179,8 +174,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
                     <input type="date" id="fecha_expediente" name="fecha_expediente" required>
                 </div>
                 <div class="form-group">
-                    <label for="nombre_completo">Nombre Completo:</label>
-                    <input type="text" id="nombre_completo" name="nombre_completo" required>
+                    <label for="operario_nombre">Operario:</label>
+                    <input type="text" id="operario_nombre" name="operario_nombre" list="operarios_list" required placeholder="Selecciona o escribe un operario">
+                    <datalist id="operarios_list">
+                        <?php foreach ($operarios as $op): ?>
+                            <option value="<?php echo htmlspecialchars($op['nombre_completo']); ?>">
+                        <?php endforeach; ?>
+                    </datalist>
                 </div>
                 
             </div>
@@ -385,12 +385,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
             <input type="hidden" name="action" value="buscar">
             <div class="form-section">
                 <div class="form-group">
-                    <label for="nombre_filtro">Nombre Completo:</label>
-                    <select id="nombre_filtro" name="nombre_filtro" required>
-                        <option value="">-- Selecciona un nombre --</option>
-                        <?php foreach ($nombres_unicos as $nombre): ?>
-                            <option value="<?php echo htmlspecialchars($nombre['nombre_completo']); ?>">
-                                <?php echo htmlspecialchars($nombre['nombre_completo']); ?>
+                    <label for="operario_filtro">Operario:</label>
+                    <select id="operario_filtro" name="operario_filtro" required>
+                        <option value="">-- Selecciona un operario --</option>
+                        <?php foreach ($operarios as $op): ?>
+                            <option value="<?php echo htmlspecialchars($op['id']); ?>">
+                                <?php echo htmlspecialchars($op['nombre_completo']); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -414,7 +414,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
     <!-- Resultados Filtrados -->
     <?php if ($mostrar_filtrados): ?>
     <div class="container">
-        <h2>Resultados de Búsqueda - <?php echo htmlspecialchars($nombre_filtro); ?> (Puntuación Total: <?php echo number_format($puntuacion_total, 2); ?>)</h2>
+        <h2>Resultados de Búsqueda - <?php echo htmlspecialchars($operario_filtro); ?> (Puntuación Total: <?php echo number_format($puntuacion_total, 2); ?>)</h2>
         <?php if (empty($expedientes_filtrados)): ?>
             <p style="padding: 20px; background-color: #f5f5f5; border-radius: 4px; text-align: center;">No se encontraron expedientes con los criterios especificados.</p>
         <?php else: ?>
@@ -423,7 +423,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
                     <tr>
                         <th>ID</th>
                         <th>ID Expediente</th>
-                        <th>Nombre Completo</th>
+                        <th>Operario</th>
                         <th>Puntuación</th>
                         <th>Fecha Expediente</th>
                         <th>Fecha Creación</th>
@@ -548,14 +548,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
             const searchForm = document.getElementById('searchForm');
             if (searchForm) {
                 searchForm.addEventListener('submit', function(e) {
-                    // Guardar la posición actual
-                    const scrollPosition = window.scrollY;
-                    // Permitir que el formulario se envíe
-                    // Restaurar la posición después de que cargue
-                    setTimeout(() => {
-                        window.scrollTo(0, scrollPosition);
-                    }, 100);
+                    // Guardar la posición actual en sessionStorage
+                    sessionStorage.setItem('scrollPosition', window.scrollY);
                 });
+            }
+            
+            // Restaurar la posición si existe
+            const savedPosition = sessionStorage.getItem('scrollPosition');
+            if (savedPosition !== null) {
+                window.scrollTo(0, parseInt(savedPosition));
+                sessionStorage.removeItem('scrollPosition');
             }
         });
 
@@ -568,6 +570,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
 
             document.querySelectorAll('input[type="radio"]').forEach(radio => {
                 radio.addEventListener('change', calculateScore);
+            });
+            
+            // Abrir datepicker al hacer click en cualquier parte del input de fecha
+            document.querySelectorAll('input[type="date"]').forEach(dateInput => {
+                dateInput.addEventListener('click', function() {
+                    this.showPicker();
+                });
+                dateInput.addEventListener('focus', function() {
+                    this.showPicker();
+                });
             });
             
             // Calcular puntuación inicial
