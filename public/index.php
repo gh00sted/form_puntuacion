@@ -543,6 +543,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
             document.getElementById('puntuacion').value = total.toFixed(2);
         }
 
+        // Prevenir que la página se desplace al buscar expedientes
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchForm = document.getElementById('searchForm');
+            if (searchForm) {
+                searchForm.addEventListener('submit', function(e) {
+                    // Guardar la posición actual
+                    const scrollPosition = window.scrollY;
+                    // Permitir que el formulario se envíe
+                    // Restaurar la posición después de que cargue
+                    setTimeout(() => {
+                        window.scrollTo(0, scrollPosition);
+                    }, 100);
+                });
+            }
+        });
+
         // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
             // Add change listeners to all radio buttons
