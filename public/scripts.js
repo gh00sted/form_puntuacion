@@ -112,6 +112,24 @@ function handleSearchScroll() {
     }
 }
 
+// Configurar animaciones en elementos
+function setupAnimations() {
+    // Verificar si ya se ejecutaron las animaciones usando localStorage
+    const animationsExecuted = localStorage.getItem('pageAnimationsShown');
+    
+    if (animationsExecuted) {
+        // Si ya se ejecutaron, remover la clase que dispara las animaciones
+        document.body.classList.remove('first-load');
+        return;
+    }
+
+    // Si es la primera vez, añadir la clase que dispara las animaciones
+    document.body.classList.add('first-load');
+
+    // Marcar que las animaciones ya se ejecutaron
+    localStorage.setItem('pageAnimationsShown', 'true');
+}
+
 // Configurar datepickers
 function setupDatePickers() {
     document.querySelectorAll('input[type="date"]').forEach(dateInput => {
@@ -126,6 +144,9 @@ function setupDatePickers() {
 
 // Inicializar todas las funcionalidades cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
+    // Configurar animaciones
+    setupAnimations();
+    
     // Configurar scroll
     handleSearchScroll();
     
