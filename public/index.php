@@ -3,7 +3,8 @@ session_start();
 require_once __DIR__ . '/../src/Database.php';
 
 $db = new Database();
-$response_message = '';
+$toast_message = '';
+$toast_type = '';
 $checklist_items = [];
 $operarios = [];
 $expedientes_filtrados = [];
@@ -15,7 +16,8 @@ $operario_filtro = '';
 try {
     $checklist_items = $db->getChecklistItems();
 } catch (Exception $e) {
-    $response_message = '<div style="color: orange; padding: 10px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 20px;">⚠ Aviso: ' . htmlspecialchars($e->getMessage()) . '</div>';
+    $toast_message = 'Aviso: ' . htmlspecialchars($e->getMessage());
+    $toast_type = 'warning';
 }
 
 // Obtener operarios
@@ -27,7 +29,8 @@ try {
 
 // Mostrar mensaje de éxito si viene del redirect
 if (isset($_GET['success']) && $_GET['success'] === '1') {
-    $response_message = '<div style="color: green; padding: 10px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; margin-bottom: 20px;">✓ Expediente guardado correctamente</div>';
+    $toast_message = 'Expediente guardado correctamente';
+    $toast_type = 'success';
 }
 
 
@@ -56,10 +59,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $puntuacion_total += $exp['puntuacion'];
             }
         } catch (Exception $e) {
-            $response_message = '<div style="color: red; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; margin-bottom: 20px;">✗ Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
+            $toast_message = 'Error: ' . htmlspecialchars($e->getMessage());
+            $toast_type = 'error';
         }
     } else {
-        $response_message = '<div style="color: orange; padding: 10px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 20px;">⚠ Por favor complete todos los campos de búsqueda</div>';
+        $toast_message = 'Por favor complete todos los campos de búsqueda';
+        $toast_type = 'warning';
     }
 }
 
@@ -138,10 +143,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
                 exit();
             }
         } catch (Exception $e) {
-            $response_message = '<div style="color: red; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; margin-bottom: 20px;">✗ Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
+            $toast_message = 'Error: ' . htmlspecialchars($e->getMessage());
+            $toast_type = 'error';
         }
     } else {
-        $response_message = '<div style="color: red; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; margin-bottom: 20px;">✗ Errores: ' . htmlspecialchars(implode(", ", $errors)) . '</div>';
+        $toast_message = 'Errores: ' . htmlspecialchars(implode(", ", $errors));
+        $toast_type = 'error';
     }
 }
 ?>
@@ -151,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulario de Puntuación</title>
+    <link rel="icon" href="/img/logo.png" type="image/png">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -159,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
             <img src="/img/logo.png" alt="Logo" class="logo">
         </div>
         <h1>Formulario de Evaluación</h1>
-        <?php echo $response_message; ?>
+        <div id="toast-container"></div>
         <form id="evaluationForm" method="POST">
             
             <!-- Datos básicos -->
@@ -405,6 +413,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
     </div>
     <?php endif; ?>
 
+    <script>
+        // Mostrar toast si hay mensaje
+        <?php if (!empty($toast_message)): ?>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast('<?php echo addslashes($toast_message); ?>', '<?php echo $toast_type; ?>');
+                
+                // Limpiar parámetro success de la URL
+                if (window.location.search.includes('success=1')) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            });
+        <?php endif; ?>
+    </script>
     <script src="scripts.js"></script>
 </body>
 </html>

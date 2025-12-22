@@ -1,3 +1,36 @@
+// Función para mostrar notificaciones flotantes (toast)
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    
+    // Crear elemento toast
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    // Mapear tipos a iconos y colores
+    const icons = {
+        success: '✓',
+        error: '✗',
+        warning: '⚠',
+        info: 'ℹ'
+    };
+    
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-message">${message}</span>
+        <button class="toast-close" onclick="this.parentElement.remove();">&times;</button>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Auto-remover después de 5 segundos
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 5000);
+}
+
 // Función para actualizar visibilidad de elementos condicionales
 function updateConditionalFields() {
     // LLEGO_A_TIEMPO = 0 (No) → mostrar INFORMO_ASEG_TRAM
