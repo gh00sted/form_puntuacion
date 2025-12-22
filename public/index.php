@@ -373,7 +373,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (!isset($_POST['action']) || $_POST
     <!-- Resultados Filtrados -->
     <?php if ($mostrar_filtrados): ?>
     <div class="container">
-        <h2>Resultados de Búsqueda - <?php echo htmlspecialchars($operario_filtro); ?> (Puntuación Total: <?php echo number_format($puntuacion_total, 2); ?>)</h2>
+        <h2>Resultados de Búsqueda - <?php echo htmlspecialchars($operario_filtro); ?> (Puntuación Total: <span class="puntuacion-total"><?php echo number_format($puntuacion_total, 2); ?></span>)</h2>
         <?php if (empty($expedientes_filtrados)): ?>
             <p style="padding: 20px; background-color: #f5f5f5; border-radius: 4px; text-align: center;">No se encontraron expedientes con los criterios especificados.</p>
         <?php else: ?>
